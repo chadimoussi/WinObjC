@@ -36,15 +36,14 @@ using namespace Microsoft::WRL;
 static WDEDeviceAccessStatus statusToMock;
 
 // Mocked version of WDEDeviceAccessInformation.
-MOCK_CLASS(MockDeviceAccessInformation,
-    public RuntimeClass<RuntimeClassFlags<WinRtClassicComMix>, IDeviceAccessInformation> {
-        InspectableClass(RuntimeClass_Windows_Devices_Enumeration_DeviceAccessInformation, BaseTrust);
+MOCK_CLASS(MockDeviceAccessInformation, public RuntimeClass<RuntimeClassFlags<WinRtClassicComMix>, IDeviceAccessInformation> {
+    InspectableClass(RuntimeClass_Windows_Devices_Enumeration_DeviceAccessInformation, BaseTrust);
 
-    public:
-        MOCK_STDCALL_METHOD_2(add_AccessChanged);
-        MOCK_STDCALL_METHOD_1(remove_AccessChanged);
-        MOCK_STDCALL_METHOD_1(get_CurrentStatus);
-    });
+public:
+    MOCK_STDCALL_METHOD_2(add_AccessChanged);
+    MOCK_STDCALL_METHOD_1(remove_AccessChanged);
+    MOCK_STDCALL_METHOD_1(get_CurrentStatus);
+});
 
 @interface __ABAddressBook_Swizzle : NSObject
 
@@ -75,11 +74,17 @@ MOCK_CLASS(MockDeviceAccessInformation,
     SEL originalSelector = @selector(createFromDeviceClassId:);
     SEL swizzledSelector = @selector(mockCreateFromDeviceClassId:);
     Method swizzledMethod = class_getClassMethod([__ABAddressBook_Swizzle class], swizzledSelector);
-    return class_replaceMethod(objc_getMetaClass("WDEDeviceAccessInformation"), originalSelector, method_getImplementation(swizzledMethod), @encode(WFGUID*));
+    return class_replaceMethod(objc_getMetaClass("WDEDeviceAccessInformation"),
+                               originalSelector,
+                               method_getImplementation(swizzledMethod),
+                               @encode(WFGUID*));
 }
 
 + (void)tearDownMock:(IMP)implementation {
-    class_replaceMethod(objc_getMetaClass("WDEDeviceAccessInformation"), @selector(createFromDeviceClassId:), implementation, @encode(WFGUID*));
+    class_replaceMethod(objc_getMetaClass("WDEDeviceAccessInformation"),
+                        @selector(createFromDeviceClassId:),
+                        implementation,
+                        @encode(WFGUID*));
 }
 
 + (WDEDeviceAccessInformation*)mockCreateFromDeviceClassId:(WFGUID*)deviceClassId {
@@ -99,16 +104,22 @@ TEST(AddressBook, AddressBook_AuthorizationStatus) {
     IMP originalImplementation = [__ABAddressBook_Swizzle setupMock];
 
     statusToMock = WDEDeviceAccessStatusUnspecified;
-    ASSERT_EQ_MSG(kABAuthorizationStatusNotDetermined, ABAddressBookGetAuthorizationStatus(), "FAILED: Authorization Status should be undetermined!\n");
-    
+    ASSERT_EQ_MSG(kABAuthorizationStatusNotDetermined,
+                  ABAddressBookGetAuthorizationStatus(),
+                  "FAILED: Authorization Status should be undetermined!\n");
+
     statusToMock = WDEDeviceAccessStatusAllowed;
-    ASSERT_EQ_MSG(kABAuthorizationStatusAuthorized, ABAddressBookGetAuthorizationStatus(), "FAILED: Authorization Status should be authorized!\n");
-    
+    ASSERT_EQ_MSG(kABAuthorizationStatusAuthorized,
+                  ABAddressBookGetAuthorizationStatus(),
+                  "FAILED: Authorization Status should be authorized!\n");
+
     statusToMock = WDEDeviceAccessStatusDeniedByUser;
     ASSERT_EQ_MSG(kABAuthorizationStatusDenied, ABAddressBookGetAuthorizationStatus(), "FAILED: Authorization Status should be denied!\n");
-    
+
     statusToMock = WDEDeviceAccessStatusDeniedBySystem;
-    ASSERT_EQ_MSG(kABAuthorizationStatusRestricted, ABAddressBookGetAuthorizationStatus(), "FAILED: Authorization Status should be restricted!\n");
+    ASSERT_EQ_MSG(kABAuthorizationStatusRestricted,
+                  ABAddressBookGetAuthorizationStatus(),
+                  "FAILED: Authorization Status should be restricted!\n");
 
     [__ABAddressBook_Swizzle tearDownMock:originalImplementation];
 }
@@ -116,20 +127,17 @@ TEST(AddressBook, AddressBook_AuthorizationStatus) {
 TEST(AddressBook, AddressBook_RequestAuthorization) {
     IMP originalImplementation = [__ABAddressBook_Swizzle setupMock];
 
-    ABAddressBookRef addressBook = NULL;
-
     // Test the case when permissions are not granted.
     statusToMock = WDEDeviceAccessStatusUnspecified;
-    ABAddressBookRequestAccessWithCompletion(addressBook, ^(bool granted, CFErrorRef error) {
+    ABAddressBookRequestAccessWithCompletion(NULL, ^(bool granted, CFErrorRef error) {
         ASSERT_FALSE_MSG(granted, "FAILED: Access should not be granted\n");
-    });    
+    });
 
     // Test the case where permissions are granted.
     statusToMock = WDEDeviceAccessStatusAllowed;
-    ABAddressBookRequestAccessWithCompletion(addressBook, ^(bool granted, CFErrorRef error) {
+    ABAddressBookRequestAccessWithCompletion(NULL, ^(bool granted, CFErrorRef error) {
         ASSERT_TRUE_MSG(granted, "FAILED: Access should be granted\n");
-    });   
-    CFRelease(addressBook);
+    });
 
     [__ABAddressBook_Swizzle tearDownMock:originalImplementation];
 }

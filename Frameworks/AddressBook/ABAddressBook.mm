@@ -16,14 +16,14 @@
 
 #import <AddressBook/ABAddressBook.h>
 
-#import <StubReturn.h>
 #import "AssertARCEnabled.h"
+#import <StubReturn.h>
 
 #import "_ABAddressBook.h"
 
-#import "initguid.h"
 #import "UWP/InteropBase.h"
 #import "UWP/WindowsDevicesEnumeration.h"
+#import "initguid.h"
 
 // GUID to check Windows Contacts permissions.
 DEFINE_GUID(_ABAddressBookContactsGUID, 0x7D7E8402, 0x7C54, 0x4821, 0xA3, 0x4E, 0xAE, 0xEF, 0xD6, 0x2D, 0xED, 0x93);
@@ -48,12 +48,13 @@ ABAddressBookRef ABAddressBookCreateWithOptions(CFDictionaryRef options, CFError
         // There was an error setting up the backing
         // contact store, so just return NULL to signify
         // the error.
-		if (error != NULL) {
+        if (error != NULL) {
+			// In this case, the caller is responsible to release error.
             *error = CFErrorCreate(NULL, ABAddressBookErrorDomain, kABOperationNotPermittedByUserError, NULL);
-		}
+        }
         return NULL;
     } else {
-        return (__bridge_retained ABAddressBookRef) addressBook;
+        return (__bridge_retained ABAddressBookRef)addressBook;
     }
 }
 
@@ -65,7 +66,7 @@ ABAuthorizationStatus ABAddressBookGetAuthorizationStatus() {
     WFGUID* guid = [WFGUID guidWithGUID:_ABAddressBookContactsGUID];
     WDEDeviceAccessInformation* deviceAccessInformation = [WDEDeviceAccessInformation createFromDeviceClassId:guid];
     WDEDeviceAccessStatus currentStatus = deviceAccessInformation.currentStatus;
-    
+
     if (currentStatus == WDEDeviceAccessStatusAllowed) {
         return kABAuthorizationStatusAuthorized;
     } else if (currentStatus == WDEDeviceAccessStatusDeniedBySystem) {
@@ -79,7 +80,8 @@ ABAuthorizationStatus ABAddressBookGetAuthorizationStatus() {
 
 /**
  @Status Caveat
- @Notes Requesting access should be done by declaring Contacts capabilities in the app's package manifest -- it cannot be granted at runtime.
+ @Notes Requesting access should be done by declaring Contacts capabilities in the app's package manifest -- it cannot be granted at
+ runtime.
 */
 void ABAddressBookRequestAccessWithCompletion(ABAddressBookRef addressBook, ABAddressBookRequestAccessCompletionHandler completion) {
     CFErrorRef error = NULL;

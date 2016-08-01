@@ -42,7 +42,7 @@
         while (!completed) {
             [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
         }
-        
+
         self.contactStore = result;
     }
 
